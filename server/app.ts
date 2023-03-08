@@ -1,6 +1,7 @@
+import { Pokemon } from '@prisma/client';
 import cors from 'cors';
 import express from 'express';
-import { getPokemon, getUserByEmail } from './prisma/db';
+import { addPokemon, deletePokemon, getAllPokemon, getUserByEmail, updatePokemonData } from './prisma/db';
 
 const app = express();
 const port = 3001;
@@ -13,13 +14,16 @@ app.use(
     })
 );
 
+app.use(express.json());
+
+/**
+ * Middleware to add auth gate in front of admin endpoints.
+ */
 app.use('/pokemon/:dexNumber', async (req, res, next) => {
     if (req.headers.authorization) {
-        console.log('auth received:', req.headers.authorization);
         const base64Credentials = req.headers.authorization.split(' ')[1];
         const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
         const [username, password] = credentials.split(':');
-        console.log(username, password);
         const user = await getUserByEmail(username);
         if (user && user.password === password) {
             next();
@@ -32,20 +36,46 @@ app.use('/pokemon/:dexNumber', async (req, res, next) => {
 });
 
 app.get('/pokemon', async (req, res) => {
-    const pokemonData = await getPokemon();
-    return res.json(pokemonData);
+    try {
+        const pokemonData = await getAllPokemon();
+        return res.json(pokemonData);
+    } catch (e) {
+        res.sendStatus(500);
+        return res.json({ error: e });
+    }
 });
 
-app.post('/pokemon/:dexNumber', async (req, res) => {
-    console.log('Reached POST /pokemon/:dexNumber');
+app.patch('/pokemon/:dexNumber', async (req, res) => {
+    const pokemonData: Pokemon = req.body;
+    try {
+        const dex_number = parseInt(req.params.dexNumber);
+        await updatePokemonData({ ...pokemonData, dex_number });
+        return res.sendStatus(200);
+    } catch (e) {
+        res.status(500);
+        return res.json({ error: e });
+    }
 });
 
 app.put('/pokemon/:dexNumber', async (req, res) => {
-    console.log('Reached PUT /pokemon/:dexNumber');
+    const pokemonData: Pokemon = req.body;
+    try {
+        const dex_number = parseInt(req.params.dexNumber);
+        await addPokemon({ ...pokemonData, dex_number });
+        res.sendStatus(200);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
 });
 
 app.delete('/pokemon/:dexNumber', async (req, res) => {
-    console.log('Reached DELETE /pokemon/:dexNumber');
+    try {
+        const dex_number = parseInt(req.params.dexNumber);
+        await deletePokemon(dex_number);
+        res.sendStatus(200);
+    } catch (e) {
+        res.status(500).send(e.message);
+    }
 });
 
 app.listen(port, () => {
