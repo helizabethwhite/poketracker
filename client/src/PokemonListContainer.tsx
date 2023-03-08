@@ -1,94 +1,33 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { pokemonData as originalPokemonData } from './data/pokemon';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TYPE_FILTER_OPTIONS } from './constants';
 import { PokemonCard } from './PokemonCard';
+import { initData, useAppStore } from './slices/appStore';
 import { PokemonType } from './types';
-
-const TYPE_FILTER_OPTIONS: { value: PokemonType | 'any'; text: string }[] = [
-    {
-        value: 'any',
-        text: 'Any',
-    },
-    {
-        value: 'grass',
-        text: 'Grass',
-    },
-    {
-        value: 'flying',
-        text: 'Flying',
-    },
-    {
-        value: 'fire',
-        text: 'Fire',
-    },
-    {
-        value: 'bug',
-        text: 'Bug',
-    },
-    {
-        value: 'fighting',
-        text: 'Fighting',
-    },
-    {
-        value: 'dark',
-        text: 'Dark',
-    },
-    {
-        value: 'normal',
-        text: 'Normal',
-    },
-    {
-        value: 'rock',
-        text: 'Rock',
-    },
-    {
-        value: 'fairy',
-        text: 'Fairy',
-    },
-    {
-        value: 'psychic',
-        text: 'Psychic',
-    },
-    {
-        value: 'ghost',
-        text: 'Ghost',
-    },
-    {
-        value: 'electric',
-        text: 'Electric',
-    },
-    {
-        value: 'poison',
-        text: 'Poison',
-    },
-    {
-        value: 'ground',
-        text: 'Ground',
-    },
-    {
-        value: 'steel',
-        text: 'Steel',
-    },
-    {
-        value: 'dragon',
-        text: 'Dragon',
-    },
-    {
-        value: 'ice',
-        text: 'Ice',
-    },
-    {
-        value: 'water',
-        text: 'Water',
-    },
-];
 
 export const PokemonListContainer = () => {
     const debounceTimerRef = useRef<number>();
+
+    const originalPokemonData = useAppStore((state) => state.pokemon);
+
+    useEffect(() => {
+        async function fetchPokemonData() {
+            if (!originalPokemonData.length) {
+                await initData();
+            }
+        }
+        fetchPokemonData();
+    }, [originalPokemonData, initData]);
 
     const [unfilteredPokemonData, setUnfilteredPokemonData] = useState(originalPokemonData);
     const [searchQuery, setSearchQuery] = useState('');
     const [type1Filter, setType1Filter] = useState<PokemonType | string>('any');
     const [type2Filter, setType2Filter] = useState<PokemonType | string>('any');
+
+    useEffect(() => {
+        if (originalPokemonData.length && !unfilteredPokemonData.length) {
+            setUnfilteredPokemonData(originalPokemonData);
+        }
+    }, [originalPokemonData]);
 
     const filteredPokeData = useMemo(() => {
         return unfilteredPokemonData.filter((dexData) => {
@@ -105,15 +44,18 @@ export const PokemonListContainer = () => {
         debounceTimerRef.current = setTimeout(() => setSearchQuery(value), 300);
     };
 
-    const markPokemonCaughtStatus = useCallback((pokemonName: string) => {
-        const tempunfilteredPokemonDataCopy = [...unfilteredPokemonData];
-        for (let i = 0; i < unfilteredPokemonData.length; i++) {
-            if (tempunfilteredPokemonDataCopy[i].name === pokemonName) {
-                tempunfilteredPokemonDataCopy[i].caught = !tempunfilteredPokemonDataCopy[i].caught;
+    const markPokemonCaughtStatus = useCallback(
+        (pokemonName: string) => {
+            const tempunfilteredPokemonDataCopy = [...unfilteredPokemonData];
+            for (let i = 0; i < unfilteredPokemonData.length; i++) {
+                if (tempunfilteredPokemonDataCopy[i].name === pokemonName) {
+                    tempunfilteredPokemonDataCopy[i].caught = !tempunfilteredPokemonDataCopy[i].caught;
+                }
             }
-        }
-        setUnfilteredPokemonData(tempunfilteredPokemonDataCopy);
-    }, []);
+            setUnfilteredPokemonData(tempunfilteredPokemonDataCopy);
+        },
+        [unfilteredPokemonData]
+    );
 
     const caughtPokemonCount = useMemo(() => {
         return filteredPokeData.filter((p) => p.caught).length;
