@@ -17,7 +17,7 @@ app.use(
 app.use(express.json());
 
 /**
- * Middleware to add auth gate in front of admin endpoints.
+ * Middleware to add auth gate in front of admin-only endpoints.
  */
 app.use('/pokemon/:dexNumber', async (req, res, next) => {
     if (req.headers.authorization) {
@@ -50,10 +50,9 @@ app.patch('/pokemon/:dexNumber', async (req, res) => {
     try {
         const dex_number = parseInt(req.params.dexNumber);
         await updatePokemonData({ ...pokemonData, dex_number });
-        return res.sendStatus(200);
+        res.sendStatus(200);
     } catch (e) {
-        res.status(500);
-        return res.json({ error: e });
+        res.status(500).send(e.message);
     }
 });
 

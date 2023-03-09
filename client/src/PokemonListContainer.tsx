@@ -1,33 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TYPE_FILTER_OPTIONS } from './constants';
 import { PokemonCard } from './PokemonCard';
-import { initData, useAppStore } from './slices/appStore';
+import { initAppData, useAppStore } from './slices/appStore';
 import { PokemonType } from './types';
 
 export const PokemonListContainer = () => {
     const debounceTimerRef = useRef<number>();
 
-    const originalPokemonData = useAppStore((state) => state.pokemon);
+    const apiPokemonData = useAppStore((state) => state.pokemon);
 
-    useEffect(() => {
-        async function fetchPokemonData() {
-            if (!originalPokemonData.length) {
-                await initData();
-            }
-        }
-        fetchPokemonData();
-    }, [originalPokemonData, initData]);
-
-    const [unfilteredPokemonData, setUnfilteredPokemonData] = useState(originalPokemonData);
+    const [unfilteredPokemonData, setUnfilteredPokemonData] = useState(apiPokemonData);
     const [searchQuery, setSearchQuery] = useState('');
     const [type1Filter, setType1Filter] = useState<PokemonType | string>('any');
     const [type2Filter, setType2Filter] = useState<PokemonType | string>('any');
 
     useEffect(() => {
-        if (originalPokemonData.length && !unfilteredPokemonData.length) {
-            setUnfilteredPokemonData(originalPokemonData);
+        async function fetchPokemonData() {
+            if (!apiPokemonData.length) {
+                await initAppData();
+            }
         }
-    }, [originalPokemonData]);
+        fetchPokemonData();
+    }, [apiPokemonData, initAppData]);
+
+    useEffect(() => {
+        if (apiPokemonData.length && !unfilteredPokemonData.length) {
+            setUnfilteredPokemonData(apiPokemonData);
+        }
+    }, [apiPokemonData]);
 
     const filteredPokeData = useMemo(() => {
         return unfilteredPokemonData.filter((dexData) => {
@@ -46,13 +46,13 @@ export const PokemonListContainer = () => {
 
     const markPokemonCaughtStatus = useCallback(
         (pokemonName: string) => {
-            const tempunfilteredPokemonDataCopy = [...unfilteredPokemonData];
+            const tempUnfilteredPokemonDataCopy = [...unfilteredPokemonData];
             for (let i = 0; i < unfilteredPokemonData.length; i++) {
-                if (tempunfilteredPokemonDataCopy[i].name === pokemonName) {
-                    tempunfilteredPokemonDataCopy[i].caught = !tempunfilteredPokemonDataCopy[i].caught;
+                if (tempUnfilteredPokemonDataCopy[i].name === pokemonName) {
+                    tempUnfilteredPokemonDataCopy[i].caught = !tempUnfilteredPokemonDataCopy[i].caught;
                 }
             }
-            setUnfilteredPokemonData(tempunfilteredPokemonDataCopy);
+            setUnfilteredPokemonData(tempUnfilteredPokemonDataCopy);
         },
         [unfilteredPokemonData]
     );

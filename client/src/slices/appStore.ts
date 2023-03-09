@@ -38,7 +38,7 @@ export const useAppStore = create<UserStoreState>((set) => ({
     },
 }));
 
-export const initData = async () => {
+export const initAppData = async () => {
     const { data } = await axios.get(buildRouteName('/pokemon'));
     useAppStore.setState({ pokemon: data });
 };
