@@ -4,38 +4,25 @@ import { buildRouteName, LOCAL_STORAGE_USER_ID_KEY } from '../constants';
 import { PokemonMetadata } from '../types';
 
 export interface UserStoreState {
-    activeUserId: string;
-    logIn: (id: string) => Promise<void>;
+    activeUserAuth: string;
+    logIn: (username: string, password: string) => Promise<void>;
     logOut: () => Promise<void>;
-    createUser: (username: string) => Promise<void>;
     pokemon: PokemonMetadata[];
-    fetchAndSetPokemon: () => Promise<void>;
 }
 
 export const useAppStore = create<UserStoreState>((set) => ({
-    activeUserId: window.localStorage.getItem(LOCAL_STORAGE_USER_ID_KEY) || '',
-    logIn: async (id: string) => {
-        await axios.post(buildRouteName('/login'), { id });
-        set({ activeUserId: id });
-        window.localStorage.setItem(LOCAL_STORAGE_USER_ID_KEY, id);
-    },
-    createUser: async (username) => {
-        await axios.post(buildRouteName('/users'), { username });
+    activeUserAuth: window.localStorage.getItem(LOCAL_STORAGE_USER_ID_KEY) || '',
+    logIn: async (username: string, password: string) => {
+        const { data: encryptedCred } = await axios.post(buildRouteName('/login'), { username, password });
+        set({ activeUserAuth: encryptedCred });
+        window.localStorage.setItem(LOCAL_STORAGE_USER_ID_KEY, encryptedCred);
     },
     logOut: async () => {
         await axios.post(buildRouteName('/logout'));
-        set({ activeUserId: '' });
+        set({ activeUserAuth: '' });
         window.localStorage.setItem(LOCAL_STORAGE_USER_ID_KEY, '');
     },
     pokemon: [],
-    fetchAndSetPokemon: async () => {
-        try {
-            const { data } = await axios.get(buildRouteName('/pokemon'));
-            set({ pokemon: data });
-        } catch (e) {
-            console.error(e);
-        }
-    },
 }));
 
 export const initAppData = async () => {

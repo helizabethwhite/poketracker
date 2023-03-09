@@ -38,10 +38,9 @@ app.use('/pokemon/:dexNumber', async (req, res, next) => {
 app.get('/pokemon', async (req, res) => {
     try {
         const pokemonData = await getAllPokemon();
-        return res.json(pokemonData);
+        res.json(pokemonData);
     } catch (e) {
-        res.sendStatus(500);
-        return res.json({ error: e });
+        res.status(500).send(e.message);
     }
 });
 

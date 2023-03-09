@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TYPE_FILTER_OPTIONS } from './constants';
+import PokeBallIcon from './PokeBallIcon';
 import { PokemonCard } from './PokemonCard';
 import { initAppData, useAppStore } from './slices/appStore';
 import { PokemonType } from './types';
@@ -13,6 +14,7 @@ export const PokemonListContainer = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [type1Filter, setType1Filter] = useState<PokemonType | string>('any');
     const [type2Filter, setType2Filter] = useState<PokemonType | string>('any');
+    const [isLoadingData, setIsLoadingData] = useState(true);
 
     useEffect(() => {
         async function fetchPokemonData() {
@@ -26,6 +28,7 @@ export const PokemonListContainer = () => {
     useEffect(() => {
         if (apiPokemonData.length && !unfilteredPokemonData.length) {
             setUnfilteredPokemonData(apiPokemonData);
+            setIsLoadingData(false);
         }
     }, [apiPokemonData]);
 
@@ -114,20 +117,28 @@ export const PokemonListContainer = () => {
                 </div>
             </div>
 
-            <p>
-                You have caught <strong>{caughtPokemonCount}</strong> out of <strong>{filteredPokeData.length}</strong>,
-                or <strong>~{Math.round((caughtPokemonCount / (filteredPokeData.length || 1)) * 100)}%</strong>
-            </p>
-
-            <div className='grid gap-6 grid-cols-3 mt-4'>
-                {filteredPokeData.map((pokemonEntry) => (
-                    <PokemonCard
-                        {...pokemonEntry}
-                        markPokemonCaughtStatus={markPokemonCaughtStatus}
-                        key={pokemonEntry.name}
-                    />
-                ))}
-            </div>
+            {isLoadingData ? (
+                <div className='loading-ball mt-4 flex justify-center'>
+                    <PokeBallIcon onClick={() => {}} shouldShowAsCaught={true} />
+                </div>
+            ) : (
+                <>
+                    <p>
+                        You have caught <strong>{caughtPokemonCount}</strong> out of{' '}
+                        <strong>{filteredPokeData.length}</strong>, or{' '}
+                        <strong>~{Math.round((caughtPokemonCount / (filteredPokeData.length || 1)) * 100)}%</strong>
+                    </p>
+                    <div className='grid gap-6 grid-cols-3 mt-4'>
+                        {filteredPokeData.map((pokemonEntry) => (
+                            <PokemonCard
+                                {...pokemonEntry}
+                                markPokemonCaughtStatus={markPokemonCaughtStatus}
+                                key={pokemonEntry.name}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
         </>
     );
 };
