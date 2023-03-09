@@ -13,7 +13,7 @@ export const PokemonCard = React.memo((props: PokemonCardProps) => {
     };
 
     return (
-        <div className={`${caught ? 'bg-green-500 ' : ''}p-2 flex justify-evenly border rounded-lg bg-white text-sm`}>
+        <div className={`${caught ? 'bg-green-400 ' : ''}p-2 flex justify-evenly border rounded-lg bg-white text-sm`}>
             <div className='flex flex-col self-center'>
                 <PokeBallIcon onClick={onToggleCaught} shouldShowAsCaught={!!caught} />
             </div>

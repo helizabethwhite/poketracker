@@ -1,94 +1,36 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { pokemonData as originalPokemonData } from './data/pokemon';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TYPE_FILTER_OPTIONS } from './constants';
+import PokeBallIcon from './PokeBallIcon';
 import { PokemonCard } from './PokemonCard';
+import { initAppData, useAppStore } from './slices/appStore';
 import { PokemonType } from './types';
-
-const TYPE_FILTER_OPTIONS: { value: PokemonType | 'any'; text: string }[] = [
-    {
-        value: 'any',
-        text: 'Any',
-    },
-    {
-        value: 'grass',
-        text: 'Grass',
-    },
-    {
-        value: 'flying',
-        text: 'Flying',
-    },
-    {
-        value: 'fire',
-        text: 'Fire',
-    },
-    {
-        value: 'bug',
-        text: 'Bug',
-    },
-    {
-        value: 'fighting',
-        text: 'Fighting',
-    },
-    {
-        value: 'dark',
-        text: 'Dark',
-    },
-    {
-        value: 'normal',
-        text: 'Normal',
-    },
-    {
-        value: 'rock',
-        text: 'Rock',
-    },
-    {
-        value: 'fairy',
-        text: 'Fairy',
-    },
-    {
-        value: 'psychic',
-        text: 'Psychic',
-    },
-    {
-        value: 'ghost',
-        text: 'Ghost',
-    },
-    {
-        value: 'electric',
-        text: 'Electric',
-    },
-    {
-        value: 'poison',
-        text: 'Poison',
-    },
-    {
-        value: 'ground',
-        text: 'Ground',
-    },
-    {
-        value: 'steel',
-        text: 'Steel',
-    },
-    {
-        value: 'dragon',
-        text: 'Dragon',
-    },
-    {
-        value: 'ice',
-        text: 'Ice',
-    },
-    {
-        value: 'water',
-        text: 'Water',
-    },
-];
 
 export const PokemonListContainer = () => {
     const debounceTimerRef = useRef<number>();
 
-    const [unfilteredPokemonData, setUnfilteredPokemonData] = useState(originalPokemonData);
+    const apiPokemonData = useAppStore((state) => state.pokemon);
+
+    const [unfilteredPokemonData, setUnfilteredPokemonData] = useState(apiPokemonData);
     const [searchQuery, setSearchQuery] = useState('');
     const [type1Filter, setType1Filter] = useState<PokemonType | string>('any');
     const [type2Filter, setType2Filter] = useState<PokemonType | string>('any');
+    const [isLoadingData, setIsLoadingData] = useState(true);
+
+    useEffect(() => {
+        async function fetchPokemonData() {
+            if (!apiPokemonData.length) {
+                await initAppData();
+            }
+        }
+        fetchPokemonData();
+    }, [apiPokemonData, initAppData]);
+
+    useEffect(() => {
+        if (apiPokemonData.length && !unfilteredPokemonData.length) {
+            setUnfilteredPokemonData(apiPokemonData);
+            setIsLoadingData(false);
+        }
+    }, [apiPokemonData]);
 
     const filteredPokeData = useMemo(() => {
         return unfilteredPokemonData.filter((dexData) => {
@@ -105,15 +47,18 @@ export const PokemonListContainer = () => {
         debounceTimerRef.current = setTimeout(() => setSearchQuery(value), 300);
     };
 
-    const markPokemonCaughtStatus = useCallback((pokemonName: string) => {
-        const tempunfilteredPokemonDataCopy = [...unfilteredPokemonData];
-        for (let i = 0; i < unfilteredPokemonData.length; i++) {
-            if (tempunfilteredPokemonDataCopy[i].name === pokemonName) {
-                tempunfilteredPokemonDataCopy[i].caught = !tempunfilteredPokemonDataCopy[i].caught;
+    const markPokemonCaughtStatus = useCallback(
+        (pokemonName: string) => {
+            const tempUnfilteredPokemonDataCopy = [...unfilteredPokemonData];
+            for (let i = 0; i < unfilteredPokemonData.length; i++) {
+                if (tempUnfilteredPokemonDataCopy[i].name === pokemonName) {
+                    tempUnfilteredPokemonDataCopy[i].caught = !tempUnfilteredPokemonDataCopy[i].caught;
+                }
             }
-        }
-        setUnfilteredPokemonData(tempunfilteredPokemonDataCopy);
-    }, []);
+            setUnfilteredPokemonData(tempUnfilteredPokemonDataCopy);
+        },
+        [unfilteredPokemonData]
+    );
 
     const caughtPokemonCount = useMemo(() => {
         return filteredPokeData.filter((p) => p.caught).length;
@@ -172,20 +117,28 @@ export const PokemonListContainer = () => {
                 </div>
             </div>
 
-            <p>
-                You have caught <strong>{caughtPokemonCount}</strong> out of <strong>{filteredPokeData.length}</strong>,
-                or <strong>~{Math.round((caughtPokemonCount / (filteredPokeData.length || 1)) * 100)}%</strong>
-            </p>
-
-            <div className='grid gap-6 grid-cols-3 mt-4'>
-                {filteredPokeData.map((pokemonEntry) => (
-                    <PokemonCard
-                        {...pokemonEntry}
-                        markPokemonCaughtStatus={markPokemonCaughtStatus}
-                        key={pokemonEntry.name}
-                    />
-                ))}
-            </div>
+            {isLoadingData ? (
+                <div className='loading-ball mt-4 flex justify-center'>
+                    <PokeBallIcon onClick={() => {}} shouldShowAsCaught={true} />
+                </div>
+            ) : (
+                <>
+                    <p>
+                        You have caught <strong>{caughtPokemonCount}</strong> out of{' '}
+                        <strong>{filteredPokeData.length}</strong>, or{' '}
+                        <strong>~{Math.round((caughtPokemonCount / (filteredPokeData.length || 1)) * 100)}%</strong>
+                    </p>
+                    <div className='grid gap-6 grid-cols-3 mt-4'>
+                        {filteredPokeData.map((pokemonEntry) => (
+                            <PokemonCard
+                                {...pokemonEntry}
+                                markPokemonCaughtStatus={markPokemonCaughtStatus}
+                                key={pokemonEntry.name}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
         </>
     );
 };
